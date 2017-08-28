@@ -8,10 +8,10 @@ We created this class file to make it easier to manage dynamic REST sessions for
 
 # What fmREST.php does:
 
-Makes every REST call available as a PHP function.
-Automatically login into FileMaker Server whenever you call any REST functions
-Saves your token for 15 minutes to reuse
-Checks for a broken or disconnected token and automatically reconnects and runs your function again
+- Makes every REST call available as a PHP function.
+- Automatically login into FileMaker Server whenever you call any REST functions
+- Saves your token for 15 minutes to reuse
+- Checks for a broken or disconnected token and automatically reconnects and runs your function again
 
 # Documentation:
 Sample.php included with most of the calls available.

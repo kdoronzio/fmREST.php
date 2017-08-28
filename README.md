@@ -1,4 +1,4 @@
-# fmRESt.php
+# fmREST.php
 
 A free tool from soSIMPLE Software
 

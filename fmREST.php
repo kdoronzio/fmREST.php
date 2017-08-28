@@ -25,7 +25,7 @@ Simplifies PHP connections to FileMaker 16's REST-based Data API.
 - TODO: other methods to save token between calls: storage?
 - TODO: if login function is unsuccessful during function calls, return login error
 
-http://www.sosimplesoftware.com/rest/php-class-file-for-filemaker-16-data-api-rest
+http://www.sosimplesoftware.com/fmrest.php
 
 2017-04-15 Created Ken d'Oronzio
 ********************************************/

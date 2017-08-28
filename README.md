@@ -20,7 +20,7 @@ Sample.php included with most of the calls available.
 3. Create a new Contacts.fmp12 based on the FileMaker template of the same name.
 4. Add a user with the name "rest" and the password "rest" 
 5. Assign this user to a privilege set with the extended privilege "fmrest" 
-6. Load sample.php in a web browser. You should see a form that will allow you to do simple record modification. 
+6. Load sample.php in a web browser over https protocol. You should see a form that will allow you to do simple record modification. (The sample form will still work without ssl, but the tokens will not be saved between calls so you will see multiple REST connections on your FileMaker Server).
 
 For complete documentation and support please visit out website:
 http://www.sosimplesoftware.com/fmrest.php

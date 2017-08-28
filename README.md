@@ -14,7 +14,8 @@ We created this class file to make it easier to manage dynamic REST sessions for
 - Checks for a broken or disconnected token and automatically reconnects and runs your function again
 
 # Documentation:
-Sample.php included with most of the calls available.
+Sample.php, which we created for our CWP presentation at DevCon 2017, is now included. This file is a simple form that demonstrates most of the calls available by the fmREST.php class.
+
 1. Follow the setup instructions on our site and FileMaker's site for the Data API (see link below)
 2. Place the class file (fmrest.php) and the sample file (sample.php) in the https root of your FileMaker Server-hosted web server directory (See FileMaker Server docs for location. You can also use any securely hosted location by changing the "$host" variable in sample.php.
 3. Create a new Contacts.fmp12 based on the FileMaker template of the same name.

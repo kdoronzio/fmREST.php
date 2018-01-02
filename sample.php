@@ -1,16 +1,20 @@
 <?PHP
 
+error_reporting(E_ALL);
+ini_set('display_errors', true );
+
+if (!isset ($_REQUEST['action'])) $_REQUEST['action']='';
+$result = array();
 
 include_once ('fmREST.php');
 
-//$debug=1;
+// $debug=1;
 
 $host = 'localhost';
 $db = 'Contacts';
 $layout = 'Contacts';
-$user = 'rest';
-$pass = 'rest';
-
+$user = 'admin';
+$pass = 'paradise';
 
 $fm = new fmREST ($host, $db, $layout, $user, $pass);
 
@@ -66,6 +70,7 @@ elseif ($_REQUEST['action'] == 'deleterecord') {
 <html>
 <head>
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<title>fmREST.php</title>
 </head>
 <body>
 <div style="margin: 50px;">
@@ -87,7 +92,7 @@ elseif ($_REQUEST['action'] == 'deleterecord') {
 			  <input type="radio" name="action" value="deleterecord" > Delete Record<br>
 			  <input type="radio" name="action" value="getrecord" > Get Record<br>
 			  <input type="radio" name="action" value="getrecords" > Get Records<br>
-			  <input type="radio" name="action" value="getrecords" > Get Records<br>
+			  <input type="radio" name="action" value="findrecords" > Find Records<br>
 			  <input type="radio" name="action" value="editrecord" > Edit Record<br>
 			  <!--input type="radio" name="action" value="setglobal" > Set Global<br-->
 			<br/>
@@ -99,12 +104,12 @@ elseif ($_REQUEST['action'] == 'deleterecord') {
 
 Request:
 <pre>
-	<? print_r ($_REQUEST); ?>
+	<?PHP print_r ($_REQUEST); ?>
 </pre>
 
 Result:
 <pre>
-	<? print_r ($result); ?>
+	<?PHP print_r ($result); ?>
 </pre>
 </body>
 </html>

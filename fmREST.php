@@ -48,7 +48,7 @@ class fmREST {
 
 		$this->debug ('findRecords pass 1' , $result);
 		
-		if ( $result ['errorCode'] == 952 ) {
+		if ( isset($result['errorCode']) && $result ['errorCode'] == 952 ) {
 			$_COOKIE ['token']=''; 
 			$this->login();
 			$result = $this->callCURL ($url, 'POST', $criteria);
@@ -66,7 +66,7 @@ class fmREST {
 
 		$this->debug ('getRecords pass 1',$result);
 		
-		if ( $result ['errorCode'] == 952 ) {
+		if ( isset($result['errorCode']) && $result ['errorCode'] == 952 ) {
 			$_COOKIE ['token']=''; 
 			$this->login();
 			$result = $this->callCURL ($url, 'GET');			
@@ -85,7 +85,7 @@ class fmREST {
 		$this->debug ('update record data ' . $id . ': ', $record);
 		$this->debug ('editRecord ' . $id . ' pass 1', $result);
 
-		if ( $result ['errorCode'] == 952 ) {
+		if ( isset($result['errorCode']) &&  $result ['errorCode'] == 952 ) {
 			$_COOKIE ['token']=''; 
 			$this->login();
 			$result = $this->callCURL ($url, 'PUT', $record);
@@ -104,7 +104,7 @@ class fmREST {
 
 		$this->debug ('create record data : ', $record);
 		$this->debug ('createRecord pass 1', $result);
-		if ( $result ['errorCode'] == 952 ) {
+		if ( isset($result['errorCode']) &&  $result ['errorCode'] == 952 ) {
 			$_COOKIE ['token']=''; 
 			$this->login();
 			$result = $this->callCURL ($url, 'POST', $record);
@@ -122,7 +122,7 @@ class fmREST {
 
 		$this->debug ('getRecord ' . $id . ' pass 1', $result);
 
-		if ( $result ['errorCode'] == 952 ) {
+		if ( isset($result['errorCode']) &&  $result ['errorCode'] == 952 ) {
 			$_COOKIE ['token']=''; 
 			$this->login();
 			$result = $this->callCURL ($url, 'GET', $parameters);
@@ -138,7 +138,7 @@ class fmREST {
 		$result = $this->callCURL ($url, 'DELETE');
 
 		$this->debug ('deleteRecord ' . $id . ' pass 1', $result);
-		if ( $result ['errorCode'] == 952 ) {
+		if ( isset($result['errorCode']) &&  $result ['errorCode'] == 952 ) {
 			$_COOKIE ['token']=''; 
 			$this->login();
 			$result = $this->callCURL ($url, 'DELETE');
@@ -155,7 +155,7 @@ class fmREST {
 
 		$this->debug ('setGlobalFields pass 1', $result);
 
-		if ( $result ['errorCode'] == 952 ) {
+		if ( isset($result['errorCode']) && $result ['errorCode'] == 952 ) {
 			$_COOKIE ['token']=''; 
 			$this->login();
 			$result = $this->callCURL ($url, 'PUT', $fields);
@@ -167,7 +167,6 @@ class fmREST {
 	
 	function login () {		
 		$this->debug ('login start cookie',$_COOKIE);
-		
 		if (!empty ($_COOKIE['token'])) {
 			$this->debug ('login existing token', $_COOKIE['token']);
 			return (array('token'=>$_COOKIE['token'],'errorCode'=>0,'result'=>'Existing')); 
@@ -180,16 +179,19 @@ class fmREST {
 		
 		$this->debug ('login result',$result);
 
-		$token = $result['token'];
+		if (isset ($result['token'])) {
+			$token = $result['token'];
 		
-		//using cookie: 
-			//has to be set before any content, with the header
-			//time should be refreshed each time we successfully hit a function - maybe within callCURL()
-		setcookie("token", $token, time()+(14*60), '','',true,true);  
-		$_COOKIE['token'] = $token;
+			//using cookie: 
+				//has to be set before any content, with the header
+				//time should be refreshed each time we successfully hit a function - maybe within callCURL()
+			setcookie("token", $token, time()+(14*60), '','',true,true);  
+			$_COOKIE['token'] = $token;
+		}
 
 		$this->debug ('login end cookie',$_COOKIE);								
 		return $result; //error
+
 	}	
 	
 	function logout () {

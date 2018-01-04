@@ -23,11 +23,14 @@ Simplifies PHP connections to FileMaker 16's REST-based Data API.
 - TODO: oAuth login
 - TODO: easier methods to set data and finds
 - TODO: other methods to save token between calls: storage?
-- TODO: if login function is unsuccessful during function calls, return login error
+- TODO: if login() function is unsuccessful during function calls, return login error
+- TODO: login() should confirm token/connection is valid and refresh if it's not
 
 http://www.sosimplesoftware.com/fmrest.php
 
 2017-04-15 Created Ken d'Oronzio
+2018-01-03 Check for variables 
+2018-01-04 Destroy cookie variable during logout
 ********************************************/
 
 class fmREST {
@@ -204,6 +207,9 @@ class fmREST {
 		$result = $this->callCURL ($url, 'DELETE');
 
 		$this->debug ('logout result', $result);
+
+		setcookie("token", '');  
+		$_COOKIE ['token']=''; 
 		return $result; //error
 	}
 	

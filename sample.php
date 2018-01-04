@@ -8,7 +8,7 @@ $result = array();
 
 include_once ('fmREST.php');
 
-// $debug=1;
+ $debug=1;
 
 $host = 'localhost';
 $db = 'Contacts';
@@ -65,6 +65,16 @@ elseif ($_REQUEST['action'] == 'deleterecord') {
 	$result = $fm -> deleteRecord ($recordId); 
 }
 
+elseif ($_REQUEST['action'] == 'login') {
+	//delete record
+	$result = $fm -> login (); 
+}
+
+elseif ($_REQUEST['action'] == 'logout') {
+	//delete record
+	$result = $fm -> logout (); 
+}
+
 ?>
 
 <html>
@@ -93,7 +103,9 @@ elseif ($_REQUEST['action'] == 'deleterecord') {
 			  <input type="radio" name="action" value="getrecord" > Get Record<br>
 			  <input type="radio" name="action" value="getrecords" > Get Records<br>
 			  <input type="radio" name="action" value="findrecords" > Find Records<br>
-			  <input type="radio" name="action" value="editrecord" > Edit Record<br>
+			  <input type="radio" name="action" value="editrecord" > Edit Record<br><br>
+			  <input type="radio" name="action" value="login" > Log In Manually (happens automatically with all above actions)<br>
+			  <input type="radio" name="action" value="logout" > Log Out Manually (will automatically log out in 15 minutes)<br>
 			  <!--input type="radio" name="action" value="setglobal" > Set Global<br-->
 			<br/>
 			

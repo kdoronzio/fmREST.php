@@ -68,7 +68,7 @@ elseif ($_REQUEST['action'] == 'getrecords') {
 elseif ($_REQUEST['action'] == 'uploadcontainer') {
 	//upload container
 	$recordId = $_REQUEST['recordid'];
-	$fieldName = 'container';
+	$fieldName = 'Photo Container';
 	$file = $_FILES['file'];
 	$result = $fm -> uploadContainer ($recordId, $fieldName, $file ); 
 }
@@ -136,7 +136,7 @@ elseif ($_REQUEST['action'] == 'logout') {
 			  <input type="radio" name="action" value="getrecords" > Get Records<br>
 			  <input type="radio" name="action" value="uploadcontainer" > Upload Container <small>(uses Record ID & File)</small><br><br>
 			  <input type="radio" name="action" value="findrecords" > Find Records <small>(uses First)</small><br><br>
-			  <input type="radio" name="action" value="setglobalfields" > Set Global Fields <small>(uses Global)</small><br><br>
+			  <input type="radio" name="action" value="setglobalfields" > Set Global Fields <small>(uses Global) - need to first define a global field in Contact file.</small><br><br>
 			  			  
 			  <input type="radio" name="action" value="login" > Log In Manually <small>(happens automatically with all above actions)</small><br>
 			  <input type="radio" name="action" value="logout" > Log Out Manually <small>(will automatically log out in 15 minutes)</small><br>

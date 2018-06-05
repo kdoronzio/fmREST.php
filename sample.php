@@ -24,8 +24,8 @@ if ($_REQUEST['action'] == 'createrecord') {
 	$record['First'] = $_REQUEST['first'];
 	$record['Last'] =  $_REQUEST['last'];
 	$data['fieldData'] =  $record;
-	$data['script'] = 'duplicate record';
-	$data['script.param'] = 'new parameter';
+//	$data['script'] = 'duplicate record';
+//	$data['script.param'] = 'new parameter';
 	$result = $fm -> createRecord ($data);
 }
 
@@ -51,8 +51,8 @@ elseif ($_REQUEST['action'] == 'editrecord') {
 elseif ($_REQUEST['action'] == 'getrecord') {
 	//get record
 	$recordId = $_REQUEST['recordid'];
-	$parameters['script'] = 'duplicate record';
-	$parameters['script.param'] = 'new parameter';
+//	$parameters['script'] = 'duplicate record';
+//	$parameters['script.param'] = 'new parameter';
 	$result = $fm -> getRecord ($recordId, $parameters); 
 }
 

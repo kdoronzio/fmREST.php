@@ -2,7 +2,10 @@
 
 A free tool from soSIMPLE Software
 
-Simplifies & manages PHP connections to FileMaker 16’s REST-based Data API.
+NOTE: UPGRADED TO WORK WITH FILEMAKER 17. NO LONGER WORKS WITH FILEMAKER 16 - use a earlier branch for that. 
+Also note, FileMaker 16 Data API is trial mode only and will stop working on September 18, 2018.
+
+Simplifies & manages PHP connections to FileMaker 17’s REST-based Data API.
 
 We created this class file to make it easier to manage dynamic REST sessions for soSIMPLE and our custom development. The goal of the class file was to help PHP developers start using the new REST engine as quickly and easily as possible.
 
@@ -14,7 +17,7 @@ We created this class file to make it easier to manage dynamic REST sessions for
 - Checks for a broken or disconnected token and automatically reconnects and runs your function again
 
 # Documentation:
-Sample.php, which we created for our CWP presentation at DevCon 2017, is now included. This file is a simple form that demonstrates most of the calls available by the fmREST.php class.
+Sample.php is a simple form that demonstrates most of the calls available by the fmREST.php class.
 
 1. Follow the setup instructions on our site and FileMaker's site for the Data API (see link below)
 2. Place the class file (fmrest.php) and the sample file (sample.php) in the https root of your FileMaker Server-hosted web server directory (See FileMaker Server docs for location. You can also use any securely hosted location by changing the "$host" variable in sample.php.

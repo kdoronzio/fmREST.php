@@ -2,10 +2,10 @@
 
 A free tool from soSIMPLE Software
 
+Simplifies & manages PHP connections to FileMaker 17’s REST-based Data API.
+
 NOTE: UPGRADED TO WORK WITH FILEMAKER 17. NO LONGER WORKS WITH FILEMAKER 16 - use a earlier branch for that. 
 Also note, FileMaker 16 Data API is trial mode only and will stop working on September 18, 2018.
-
-Simplifies & manages PHP connections to FileMaker 17’s REST-based Data API.
 
 We created this class file to make it easier to manage dynamic REST sessions for soSIMPLE and our custom development. The goal of the class file was to help PHP developers start using the new REST engine as quickly and easily as possible.
 

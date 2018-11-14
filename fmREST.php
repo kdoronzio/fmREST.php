@@ -343,8 +343,10 @@ class fmREST {
 	function __destruct() {
 		global $debug;
 		if ($debug) {
-			echo "\nDEBUGGING ON: \n";
+			echo "<strong>DEBUGGING ON: </strong><br>";
+			echo "<pre>";
 			print_r ($this->debug_array);
+			echo "</pre>";
 		}	
 	}
 

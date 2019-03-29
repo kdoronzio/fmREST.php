@@ -11,10 +11,10 @@ include_once ('fmREST.php');
  $debug=1;
 
 $host = 'myserver.com';
-$db = 'my database name';
-$layout = 'my layout name';
-$user = 'account name';
-$pass = 'password';
+$db = 'Contacts';
+$layout = 'Contact Details';
+$user = 'rest';
+$pass = 'rest';
 
 $fm = new fmREST ($host, $db, $user, $pass, $layout);
 

@@ -153,7 +153,7 @@ class fmREST {
 	function uploadContainer ($id, $fieldName, $file, $repetition = 1) { //not connected (token invalid)
 		$login = $this->login();
 
-		$url = "/layouts/" . rawurlencode($this->layout) . '/records/' . $id . '/containers/' . $fieldName . '/' . $repetition ;
+		$url = "/layouts/" . rawurlencode($this->layout) . '/records/' . $id . '/containers/' . rawurlencode($fieldName) . '/' . $repetition ;
 		$cfile = curl_file_create($file['tmp_name'], $file['type'], $file['name']);
 		$file = array ('upload' => $cfile);
 

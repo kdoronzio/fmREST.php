@@ -21,18 +21,16 @@ Sample.php is a simple form that demonstrates most of the calls available by the
 
 1. Follow the setup instructions on our site and FileMaker's site for the Data API (see link below)
 2. Edit the sample.php file, entering your FileMaker Server address (should be the Fully Qualified Domain Name (FQDN) that your FMS is accessible at) at line 13: $host = your.server.address
-3. Place the class file (fmREST.php) and the sample file (sample.php) in the https root of your FileMaker Server-hosted web server directory (See FileMaker Server docs for location). You can also host the php scripts on any other php enabled web server that can connect to your FileMaker Server address. 
-4. Create a new Contacts.fmp12 based on the FileMaker sample template of the same name (be sure you're using the Contacts file from the "Sample" area, not the "Starter" area. Upload this file to your FileMaker Server 17.
-5. Add a user with the name "rest" and the password "rest" 
-6. Assign this user to a privilege set with the extended privilege "fmrest" 
-7. Load sample.php in a web browser over https protocol. You should see a form that will allow you to do simple record modification. (The sample form will still work without ssl, but the tokens will not be saved between calls so you will see multiple REST connections on your FileMaker Server).
+3. Place the class file (fmREST.php) and the sample file (sample.php) in either (1) the https root of your FileMaker Server-hosted web server directory (See FileMaker Server docs for location) or (2) on any other php enabled web server that can connect to your FileMaker Server address. 
+4. Upload the included sample.fmp12 file to your FileMaker Server 17. This file is a very basic FileMaker file that includes a user with FMREST security privileges.
+5. Load sample.php in a web browser over https protocol. You should see a form that will allow you to do simple record modification along with all the API calls available from the FileMaker Data API. (The sample form will still work without ssl, but the tokens will not be saved between calls so you will see multiple REST connections on your FileMaker Server).
 
 For complete documentation and support please visit out website:
 http://www.sosimplesoftware.com/fmrest.php
 
 We’ll also be updating it with new features. If you’d like to add something to it or have any comments, please let us know.
 
-Copyright 2017 Paradise Partners, Inc DBA soSIMPLE Software / Ken d'Oronzio
+Copyright 2019 Paradise Partners, Inc DBA soSIMPLE Software / Ken d'Oronzio
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

@@ -21,7 +21,7 @@ Sample.php is a simple form that demonstrates most of the calls available by the
 1. Follow the setup instructions on our site and FileMaker's site for the Data API (see link below)
 2. Edit the sample.php file, entering your FileMaker Server address (should be the Fully Qualified Domain Name (FQDN) that your FMS is accessible at) at line 13: $host = your.server.address
 3. Place the class file (fmREST.php) and the sample file (sample.php) in either (1) the https root of your FileMaker Server-hosted web server directory (See FileMaker Server docs for location) or (2) on any other php enabled web server that can connect to your FileMaker Server address. 
-4. Upload the included sample.fmp12 file to your FileMaker Server 17. This file is a very basic FileMaker file that includes a user with FMREST security privileges.
+4. Upload the included sample.fmp12 file to your FileMaker Server 17. This file is a very basic FileMaker file that includes a user with FMREST security privileges. (note: the developer user name is "admin" and the password is "paradise").
 5. Load sample.php in a web browser over https protocol. You should see a form that will allow you to do simple record modification along with all the API calls available from the FileMaker Data API. (The sample form will still work without ssl, but the tokens will not be saved between calls so you will see multiple REST connections on your FileMaker Server).
 
 For complete documentation and support please visit out website:

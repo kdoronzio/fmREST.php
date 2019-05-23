@@ -8,8 +8,6 @@ $result = array();
 
 include_once ('fmREST.php');
 
-$debug=true;
-
 $host = 'myhost.domain.com';
 $db = 'fmREST-sample';
 $user = 'fmrest';
@@ -17,8 +15,13 @@ $pass = 'paradise';
 $layout = 'sample';
 
 $fm = new fmREST ($host, $db, $user, $pass, $layout);
-$fm -> show_debug = false;
-$fm -> secure = true;
+$fm -> show_debug = false; //turn this to true or "html" to show automatically. We're manually including debug information with <print_r ($fm->debug_array);>
+$fm -> secure = true; //not required - defaults to true
+
+/* uncomment the following two lines when working with FileMaker 17 Server */
+// $fm -> version = "v1";
+// $fm -> fmversion = 17;
+
 
 if ($_REQUEST['action'] == 'createrecord') {
 	//create record

@@ -11,7 +11,7 @@ include_once ('fmREST.php');
 $debug=true;
 
 $host = 'myhost.domain.com';
-$db = 'sample';
+$db = 'fmREST-sample';
 $user = 'fmrest';
 $pass = 'paradise';
 $layout = 'sample';

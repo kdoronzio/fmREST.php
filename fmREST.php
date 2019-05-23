@@ -20,12 +20,8 @@ Simplifies PHP connections to FileMaker 16's REST-based Data API.
 - Requires secure (https) connection
 
 - TODO: oAuth login
-- TODO: easier methods to set data and finds (eg. $fm -> addRequest())
-- TODO: check environment: ssl/https, first call on page, other from our web page?
-- TODO: port (can currently be appended to $host)
-- TODO: logout function to specify token for manual operation
-- TODO: fail after initial login attempt for each function
-- TODO: add layout as a parameter to each function
+- TODO: easier methods to set data and finds (eg. $fm -> addRequest()) or utility functions ($fm->buildQuery())
+- TODO: check environment: ssl/https, first call on page, fmversion, other from our web page?
 
 
 http://www.sosimplesoftware.com/fmrest.php
@@ -38,6 +34,18 @@ ADDED: if login() function is unsuccessful during function calls, return login e
 ADDED: login() should confirm token/connection is valid and refresh if it's not
 ADDED: SSL certificate host checks
 ADDED: Upload Container
+2019-03-28 Began FM18 changes
+ADDED: all new FMS18 functions
+CHANGED: login now requires empty JSON object instead of empty JSON array
+ADDED: version and fmversion tests
+ADDED: errorcheck and throw error turned into functions
+CHANGED: variable for cookie token name, default to fmtoken
+CHANGED: layout can be set in initial setup ("new fmREST") OR in each relevent function
+CHANGED: show_debug is now a class property instead of a global variable - can send "HTML" or true, or pull $debug_array
+CHANGED: logout function can specify token id for manual operation/non-secure environments
+DOC: port can be appended to $host
+CHANGE: fail after initial login attempt for each function
+
 
 ********************************************/
 
@@ -47,144 +55,256 @@ class fmREST {
     public $user = '';
     public $pass = '';
 	
-    public $layout = ''; //no longer required for authentication, but used in most functions - 
-    // should add layout as a parameter to: findrecords, getrecords, editrecord, createrecord, getrecord, deleterecord, uploadcontainer
-    // last parameter and optional, should default to $this -> layout
-    
+    public $version = 'vLatest'; 
+    public $fmversion = 18; 
+    public $layout = '';    
 
 	public $secure = true;
+	public $token_name = 'fmtoken';
+	public $show_debug = false;
+	
 	public $debug_array = array();
 	
-	
-	function createRecord ($data) {
-		$login = $this->login();
+	function productInfo () {
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		$url = "https://" . $this->host . "/fmi/data/".$this->version."/productInfo";
+		$result = $this->callCURL ($url, 'GET');
+		$this->updateDebug ('productInfo result', $result);
+		return $result;			
+	}
 
-		$url = "/layouts/" . rawurlencode($this->layout) . "/records" ;
+	function databaseNames () { //doesn't work when you're logged in (because both basic & bearer headers are sent)
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		$url = "https://" . $this->host . "/fmi/data/".$this->version."/databases";
+		$header = "Authorization: Basic " . base64_encode ($this->user . ":" . $this->pass);
+		$result = $this->callCURL ($url, 'GET', array(), array ($header));
+		$this->updateDebug ('databaseNames result', $result);
+		return $result;			
+	}
+	
+	function layoutNames () {
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
+
+		$url = "/layouts/";
+		$result = $this->callCURL ($url, 'GET');	
+		$this->updateDebug ('layoutNames result pass 1', $result);
+
+		$result = $this->checkValidResult($result);
+		if (!$result){
+			$result = $this->callCURL ($url, 'GET');	
+			$this->updateDebug ('layoutNames result pass 2', $result);
+		}
+		
+		return $result;	
+	}
+	
+	function scriptNames () {
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
+
+		$url = "/scripts/";
+		$result = $this->callCURL ($url, 'GET');	
+		$this->updateDebug ('scriptNames result pass 1', $result);
+
+		$result = $this->checkValidResult($result);
+		if (!$result) {
+			$result = $this->callCURL ($url, 'GET');	
+			$this->updateDebug ('scriptNames result pass 2', $result);
+		}
+		return $result;	
+	}
+	
+	function layoutMetadata ( $layout = NULL ) {
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+ 		if (empty ($layout)) $layout = $this->layout;
+	
+		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
+
+		$url = "/layouts/". rawurlencode($layout);
+		$result = $this->callCURL ($url, 'GET');	
+		$this->updateDebug ('layoutMetadata result pass 1', $result);
+
+		$result = $this->checkValidResult($result);
+		if (!$result){ 
+			$result = $this->callCURL ($url, 'GET');	
+			$this->updateDebug ('layoutMetadata result pass 2', $result);
+		}
+		return $result;	
+	}
+	
+	function oldLayoutMetadata ( $layout = NULL ) {
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+ 		if (empty ($layout)) $layout = $this->layout;
+	
+		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
+
+		$url = "/layouts/". rawurlencode($layout) . "/metadata";
+		$result = $this->callCURL ($url, 'GET');	
+		$this->updateDebug ('oldLayoutMetadata pass 1', $result);
+
+		$result = $this->checkValidResult($result);
+		if (!$result) {
+			$result = $this->callCURL ($url, 'GET');	
+			$this->updateDebug ('oldLayoutMetadata pass 2', $result);
+		}
+
+		return $result;	
+	}
+
+	function createRecord ($data, $layout=NULL) {
+		if (empty ($layout)) $layout = $this->layout;
+		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
+
+		$url = "/layouts/" . rawurlencode($layout) . "/records" ;
 		$result = $this->callCURL ($url, 'POST', $data);
 
-		$this->debug ('create record data : ', $data);
-		$this->debug ('createRecord pass 1', $result);
-		if ( isset($result['messages'][0]['code']) &&  $result['messages'][0]['code'] == 952 ) { //not connected (token invalid)
-			$_COOKIE ['token']=''; 
-			$login = $this->login();
-			if ( $login['messages'][0]['code'] != 0) return $login;
+		$this->updateDebug ('create record data : ', $data);
+		$this->updateDebug ('createRecord pass 1', $result);
+		
+		$result = $this->checkValidResult($result);
+		if (!$result){
 			$result = $this->callCURL ($url, 'POST', $data);
-			$this->debug ('createRecord pass 2', $result);
+			$this->updateDebug ('createRecord pass 2', $result);
 		}
 		
 		return $result; //error, foundcount, json and array
 	}
 	
-	function deleteRecord ($id, $scripts) {
+	function deleteRecord ($id, $scripts, $layout=NULL) {
+		if (empty ($layout)) $layout = $this->layout;
 		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
 
-		$url = "/layouts/" . rawurlencode($this->layout) . '/records/' . $id ;
+		$url = "/layouts/" . rawurlencode($layout) . '/records/' . $id ;
 		$result = $this->callCURL ($url, 'DELETE',  $scripts);
 
-		$this->debug ('deleteRecord ' . $id . ' pass 1', $result);
-		if ( isset($result['messages'][0]['code']) &&  $result['messages'][0]['code'] == 952 ) { //not connected (token invalid)
-			$_COOKIE ['token']=''; 
-			$login = $this->login();
-			if ( $login['messages'][0]['code'] != 0) return $login;
+		$this->updateDebug ('deleteRecord ' . $id . ' pass 1', $result);
+		$result = $this->checkValidResult($result);
+		if (!$result) {			
 			$result = $this->callCURL ($url, 'DELETE', $scripts);
-			$this->debug ('deleteRecord ' . $id . ' pass 2', $result);
+			$this->updateDebug ('deleteRecord ' . $id . ' pass 2', $result);
 		}
 		return $result; //error
 	}	
 
-	function editRecord ($id, $record) {
+	function editRecord ($id, $record, $layout=NULL) {
+		if (empty ($layout)) $layout = $this->layout;
 		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
 
-		$url = "/layouts/" . rawurlencode($this->layout) . '/records/' . $id ;
+		$url = "/layouts/" . rawurlencode($layout) . '/records/' . $id ;
 		$result = $this->callCURL ($url, 'PATCH', $record);
 		
-		$this->debug ('update record data ' . $id . ': ', $record);
-		$this->debug ('editRecord ' . $id . ' pass 1', $result);
+		$this->updateDebug ('update record data ' . $id . ': ', $record);
+		$this->updateDebug ('editRecord ' . $id . ' pass 1', $result);
 
-		if ( isset($result['messages'][0]['code']) &&  $result['messages'][0]['code'] == 952 ) { //not connected (token invalid)
-			$_COOKIE ['token']=''; 
-			$login = $this->login();
-			if ( $login['messages'][0]['code'] != 0) return $login;
+		$result = $this->checkValidResult($result);
+		if (!$result) {			
 			$result = $this->callCURL ($url, 'PATCH', $record);
-			$this->debug ('editRecord ' . $id . ' pass 2', $result);
-			
+			$this->updateDebug ('editRecord ' . $id . ' pass 2', $result);		
 		}
 		
 		return $result; //error, foundcount, json and array
 	}
 	
-	function getRecord ($id, $parameters= array ()) {
+	function getRecord ($id, $parameters= array (), $layout=NULL) {
+		if (empty ($layout)) $layout = $this->layout;
 		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
 
-		$url = "/layouts/" . rawurlencode($this->layout) . '/records/' . $id ;
+		$url = "/layouts/" . rawurlencode($layout) . '/records/' . $id ;
 		$result = $this->callCURL ($url, 'GET', $parameters);
 
-		$this->debug ('getRecord ' . $id . ' pass 1', $result);
+		$this->updateDebug ('getRecord ' . $id . ' pass 1', $result);
 
-		if ( isset($result['messages'][0]['code']) &&  $result['messages'][0]['code'] == 952 ) { //not connected (token invalid)
-			$_COOKIE ['token']=''; 
-			$login = $this->login();
-			if ( $login['messages'][0]['code'] != 0) return $login;
+		$result = $this->checkValidResult($result);
+		if (!$result) {			
 			$result = $this->callCURL ($url, 'GET', $parameters);
-			$this->debug ('getRecord ' . $id . ' pass 2', $result);
+			$this->updateDebug ('getRecord ' . $id . ' pass 2', $result);
 		}
 		return $result; //error, foundcount, json and array
 	}	
 
-	function getRecords ($parameters=array()) {
+	function executeScript ( $scriptName, $scriptParameter, $layout=NULL ) {
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		if (empty ($layout)) $layout = $this->layout;
 		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
 
-		$url = "/layouts/" . rawurlencode($this->layout) . "/records";
+		$url = "/layouts/" . rawurlencode($layout) . '/script/' . rawurlencode($scriptName);
+		$parameters['script.param'] = $scriptParameter;
 		$result = $this->callCURL ($url, 'GET', $parameters);
 
-		$this->debug ('getRecords pass 1',$result);
+		$this->updateDebug ('executeScript ' . $scriptName . ' pass 1', $result);
+
+		$result = $this->checkValidResult($result);
+		if (!$result) {			
+			$result = $this->callCURL ($url, 'GET', $parameters);
+			$this->updateDebug ('executeScript ' . $scriptName . ' pass 2', $result);
+		}
+		return $result; //error, foundcount, json and array
+	}	
+	
+	function getRecords ($parameters=array(), $layout=NULL) {
+		if (empty ($layout)) $layout = $this->layout;
+		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
+
+		$url = "/layouts/" . rawurlencode($layout) . "/records";
+		$result = $this->callCURL ($url, 'GET', $parameters);
+
+		$this->updateDebug ('getRecords pass 1',$result);
 		
-		if ( isset($result['messages'][0]['code']) && $result['messages'][0]['code'] == 952) { //not connected (token invalid)
-			$_COOKIE ['token']=''; 
-			$login = $this->login();
-			if ( $login['messages'][0]['code'] != 0) return $login;
+		$result = $this->checkValidResult($result);
+		if (!$result) {			
 			$result = $this->callCURL ($url, 'GET', $parameters);			
-			$this->debug ('getRecords pass 2',$result);
+			$this->updateDebug ('getRecords pass 2',$result);
 		} 
 		
 		return $result; //error, foundcount, json and array
 	}
 	
-	function uploadContainer ($id, $fieldName, $file, $repetition = 1) { //not connected (token invalid)
+	function uploadContainer ($id, $fieldName, $file, $repetition = 1, $layout=NULL) {
+		if (empty ($layout)) $layout = $this->layout;
 		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
 
-		$url = "/layouts/" . rawurlencode($this->layout) . '/records/' . $id . '/containers/' . rawurlencode($fieldName) . '/' . $repetition ;
+		$url = "/layouts/" . rawurlencode($layout) . '/records/' . $id . '/containers/' . rawurlencode($fieldName) . '/' . $repetition ;
 		$cfile = curl_file_create($file['tmp_name'], $file['type'], $file['name']);
 		$file = array ('upload' => $cfile);
 
 		$result = $this->callCURL ($url, 'POSTFILE', $file);
 
-		$this->debug ('file ', $file);
-		$this->debug ('uploadContainer ' . $id . ' pass 1', $result);
-		if ( isset($result['messages'][0]['code']) &&  $result['messages'][0]['code'] == 952 ) { //not connected (token invalid)
-			$_COOKIE ['token']=''; 
-			$login = $this->login();
-			if ( $login['messages'][0]['code'] != 0) return $login;
+		$this->updateDebug ('file ', $file);
+		$this->updateDebug ('uploadContainer ' . $id . ' pass 1', $result);
+		$result = $this->checkValidResult($result);
+		if (!$result) {			
 			$result = $this->callCURL ($url, 'POSTFILE', '', $file);
-			$this->debug ('uploadContainer ' . $id . ' pass 2', $result);
+			$this->updateDebug ('uploadContainer ' . $id . ' pass 2', $result);
 		}
 		return $result; //error
 	}	
 	
-	function findRecords ($data) { 
+	function findRecords ($data, $layout=NULL) { 
+		if (empty ($layout)) $layout = $this->layout;
 		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
 
-		$url = "/layouts/" . rawurlencode($this->layout) . "/_find";
+		$url = "/layouts/" . rawurlencode($layout) . "/_find";
 		$result = $this->callCURL ($url, 'POST', $data);
 
-		$this->debug ('findRecords pass 1' , $result);
+		$this->updateDebug ('findRecords pass 1' , $result);
 		
-		if ( isset($result['messages'][0]['code']) && $result['messages'][0]['code'] == 952 ) { //not connected (token invalid)
-			$_COOKIE ['token']=''; 
-			$login = $this->login();
-			if ( $login['messages'][0]['code'] != 0) return $login;
+		$result = $this->checkValidResult($result);
+		if (!$result) {			
 			$result = $this->callCURL ($url, 'POST', $data);
-			$this->debug ('findRecords pass 2' , $result);
+			$this->updateDebug ('findRecords pass 2' , $result);
 		}
 		
 		return $result; 
@@ -192,75 +312,70 @@ class fmREST {
 
 	function setGlobalFields ($fields) {
 		$login = $this->login();
+		if (!$this->checkValidLogin($login)) return $login;
 
 		$url =  "/globals" ;
 		$result = $this->callCURL ($url, 'PATCH', $fields);
 
-		$this->debug ('setGlobalFields pass 1', $result);
+		$this->updateDebug ('setGlobalFields pass 1', $result);
 
-		if ( isset($result['messages'][0]['code']) && $result['messages'][0]['code'] == 952 ) { //not connected (token invalid)
-			$_COOKIE ['token']=''; 
-			$login = $this->login();
-			if ( $login['messages'][0]['code'] != 0) return $login;
+		$result = $this->checkValidResult($result);
+		if (!$result) {			
 			$result = $this->callCURL ($url, 'PATCH', $fields);
-			$this->debug ('setGlobalFields pass 1', $result);
+			$this->updateDebug ('setGlobalFields pass 1', $result);
 		}
 		return $result; //error, foundcount, json and array
 	}
 	
 	
 	function login () {		
-		$this->debug ('login start cookie',$_COOKIE);
-		if (!empty ($_COOKIE['token'])) {
-			$this->debug ('login existing token', $_COOKIE['token']);
-			//this return needs to be changed to 'messages' format
-			return (array('response'=> array ('token'=>$_COOKIE['token']),'messages' => [array('code'=>0,'message'=>'Already logged in.')])); 
+		$this->updateDebug ('login start cookie',$_COOKIE);
+		if (!empty ($_COOKIE[$this->token_name])) {
+			$this->updateDebug ('login existing token', $_COOKIE[$this->token_name]);
+			return (array('response'=> array ('token'=>$_COOKIE[$this->token_name]),'messages' => [array('code'=>0,'message'=>'Already have a token.')])); 
 		}
 
 		$url =  "/sessions" ;
 		$header = "Authorization: Basic " . base64_encode ($this->user . ":" . $this->pass);
-
-		$result = $this->callCURL ($url, 'POST', array(), array ($header));
-		
-		$this->debug ('login result',$result);
+		$result = $this->callCURL ($url, 'POST', array(), array ($header));	
+		$this->updateDebug ('login result',$result);
 
 		if (isset ($result['response']['token'])) {
 			$token = $result['response']['token'];
-		
-			//using cookie: 
-				//has to be set before any content, with the header
-				//time should be refreshed each time we successfully hit a function - maybe within callCURL()
-			setcookie("token", $token, time()+(14*60), '','',true,true);  
-			$_COOKIE['token'] = $token;
+			setcookie($this->token_name, $token, time()+(14*60), '','',true,true);  
+			$_COOKIE[$this->token_name] = $token;
 		}
 
-		$this->debug ('login end cookie',$_COOKIE);								
-		return $result; //error
+		$this->updateDebug ('login end cookie',$_COOKIE);								
+		return $result;
 
 	}	
 	
-	function logout () {
-		if (empty ($_COOKIE['token'])) {
-			$this->debug ('logout no token');
-			//this return needs to be changed to 'messages' format
-			return (array ('response'=> array(), 'messages' => [array('code'=>0,'message'=>'No connection')])); 
+	function logout ( $token = NULL ) {
+		if (empty ($token)) $token = $_COOKIE[$this->token_name];
+		
+		if (empty ($token)) {
+			$this->updateDebug ('logout no token');
+			return ($this->throwRestError(0,'No Token'));
 		}
 	
-		$url = "/sessions/" . $_COOKIE['token'] ;
+		$url = "/sessions/" . $token ;
 		$result = $this->callCURL ($url, 'DELETE');
 
-		$this->debug ('logout result', $result);
+		$this->updateDebug ('logout result', $result);
 
-		setcookie("token", '');  
-		$_COOKIE ['token']=''; 
-		return $result; //error
+		if ($token == $_COOKIE[$this->token_name]) {
+			setcookie($this->token_name, '');  
+			$_COOKIE [$this->token_name]=''; 
+		}
+		return $result; 
 	}
 	
 
 	function callCURL ($url, $method, $payload='', $header=array()) {
-		$url = "https://" . $this->host . "/fmi/data/v1/databases/" . rawurlencode($this->db) . $url;
+		if ( substr ($url, 0, 4) != 'http') $url = "https://" . $this->host . "/fmi/data/".$this->version."/databases/" . rawurlencode($this->db) . $url;
 
-		$this->debug ("pre-payload: ", $payload);
+		$this->updateDebug ("pre-payload: ", $payload);
 				 
 		if ($method == 'POSTFILE') $contentType = 'multipart/form-data';
 		else $contentType = 'application/json';
@@ -279,9 +394,9 @@ class fmREST {
 		curl_setopt($ch, CURLOPT_VERBOSE, 1);
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1); //Don'T use cache
 
-        if (!empty ($_COOKIE['token'])) {
-        	$this->debug ('not empty token on call', $_COOKIE['token']);
-			$header = array_merge ($header, array ('Authorization:Bearer '. $_COOKIE['token'] , 'Content-Type: '.$contentType));
+        if (!empty ($_COOKIE[$this->token_name]) && empty (preg_grep('/^Authorization/i', $header))) {
+        	$this->updateDebug ('not empty token on call', $_COOKIE[$this->token_name]);
+			$header = array_merge ($header, array ('Authorization:Bearer '. $_COOKIE[$this->token_name] , 'Content-Type: '.$contentType));
 			curl_setopt ($ch, CURLOPT_HTTPHEADER, $header );
         } else {
 			$header = array_merge ($header, array ('Content-Type: '.$contentType));
@@ -289,14 +404,15 @@ class fmREST {
 		}
 		
 		
-		$this->debug ("payload: ", $payload);
+		$this->updateDebug ("payload: ", $payload);
 
 		if ( isset ($payload) && is_array($payload)) {
 			if ($method == 'GET' || $method == 'DELETE') {
 				$url = $url . '?' . http_build_query($payload);
 				unset ($payload);
 			} elseif ($method != 'POSTFILE') {
-				$payload = json_encode ($payload);
+				if (empty($payload))$payload = json_encode ($payload, JSON_FORCE_OBJECT);
+				else $payload = json_encode ($payload) ;
 			}
 			
 		}
@@ -313,42 +429,74 @@ class fmREST {
         $info = curl_getinfo ($ch);
 
 	     curl_close($ch);  
-  	  		 $this->debug ('header', $header);
+		 $this->updateDebug ('header', $header);
 
-		 $this->debug ('url', $url);
-		 $this->debug ("call error: ", $error);
-		 $this->debug ("call result: ", $result);
-		 $this->debug ("call info: ", $info);
+		 $this->updateDebug ('url', $url);
+		 $this->updateDebug ("call error: ", $error);
+		 $this->updateDebug ("call result: ", $result);
+		 $this->updateDebug ("call info: ", $info);
 
 	    if (! empty ($result)) {
 	    	$result = json_decode ($result, true);
 			return $result;
 		} 
-		elseif ( ! empty ($info['http_code'])) return (array ('response'=> array(), 'messages' => [array('code'=>$info['http_code'],'message'=>'HTTP Error')])); 
-		elseif ( ! empty ($error)) return (array ('response'=> array(), 'messages' => [array('code'=>-1,'message'=>$error)]));
-		else return (array ('response'=> array(), 'messages' => [array('code'=>-1,'message'=>'Empty Result')]));
+		elseif ( ! empty ($info['http_code'])) $this->throwRestError($info['http_code'],'HTTP Error '.$info['http_code']);
+		elseif ( ! empty ($error)) return $this->throwRestError(-1,$error);
+		else return $this->throwRestError(-1,'Empty Result');
+	}
+	
+	function throwRestError ($num,$message) {
+		return (array ('response'=> array(), 'messages' => [array('code'=>$num,'message'=>$message)]));	
+	}
 
+	function checkValidResult($result){
+		if ( isset($result['messages'][0]['code']) &&  $result['messages'][0]['code'] != 0 ) { 
+			$_COOKIE [$this->token_name]=''; 
+			$login = $this->login();
+			if ( $login['messages'][0]['code'] != 0) {
+				$this->updateDebug ('checkValidResult', '2nd login failed');
+				return $login;			
+			}
+			$this->updateDebug ('checkValidResult', '2nd login succeeded');
+			return false;
+		}	
+		$this->updateDebug ('checkValidResult', 'valid result');
+	 	return $result;
+	}
+
+	function checkValidLogin($result){
+		if ( isset($result['messages'][0]['code']) &&  $result['messages'][0]['code'] != 0 ) { //any error in result
+			$this->updateDebug ('Failed initial login', $result);
+			return false;
+		}	
+		$this->updateDebug ('Succeeded initial login', $result);	 	
+	 	return true;
 	}
 		
     function __construct($host='',$db='',$user='',$pass='', $layout='') {
         if (!empty ($host))$this->host = $host;
         if (!empty ($db)) $this->db = $db;
-        if (!empty ($layout))$this->layout = $layout;
         if (!empty ($user))$this->user = $user;
         if (!empty ($pass))$this->pass = $pass;
+        if (!empty ($layout))$this->layout = $layout;
 	
 		return true;
 	}
 	
 	function __destruct() {
-		global $debug;
-		if ($debug) {
+		if (strtoupper ($this->show_debug) == "HTML") {
+			echo "<br><strong>DEBUGGING ON: </strong><br>";
+			echo "<pre>";
+			print_r ($this->debug_array);
+			echo "</pre>";
+		} 
+		elseif ($this->show_debug) {
 			echo "\nDEBUGGING ON: \n";
 			print_r ($this->debug_array);
 		}	
 	}
 
-	function debug ($label, $value = '') {
+	function updateDebug ($label, $value = '') {
 			$this -> debug_array [$label] = $value;
 	}	
 }

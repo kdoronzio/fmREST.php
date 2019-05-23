@@ -10,7 +10,7 @@ include_once ('fmREST.php');
 
 $debug=true;
 
-$host = 'fm18.paradisepartners.com';
+$host = 'myhost.domain.com';
 $db = 'sample';
 $user = 'fmrest';
 $pass = 'paradise';

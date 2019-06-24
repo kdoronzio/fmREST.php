@@ -386,7 +386,7 @@ class fmREST {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);         //return the transfer as a string 
 		if ($this -> secure)  {
 			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);         //verify SSL CERT 
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 1);         //verify SSL CERT 
+			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);         //verify SSL CERT 
 		} else {
 			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);         //don't verify SSL CERT 
 			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);         //don't verify SSL CERT 

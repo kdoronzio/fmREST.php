@@ -231,24 +231,45 @@ class fmREST {
 		return $result; //error, foundcount, json and array
 	}	
 
-	function executeScript ( $scriptName, $scriptParameter, $layout=NULL ) {
-		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
-		if (empty ($layout)) $layout = $this->layout;
-		$login = $this->login();
-		if (!$this->checkValidLogin($login)) return $login;
-
-		$url = "/layouts/" . rawurlencode($layout) . '/script/' . rawurlencode($scriptName);
-		$parameters['script.param'] = $scriptParameter;
-		$result = $this->callCURL ($url, 'GET', $parameters);
-
-		$this->updateDebug ('executeScript ' . $scriptName . ' pass 1', $result);
-
-		$result = $this->checkValidResult($result);
-		if (!$result) {			
+	function executeScript ( $scriptName, $scriptParameter, $layout=NULL, $id=NULL ) {
+		if ($this->fmversion == 18) {
+			if (empty ($layout)) $layout = $this->layout;
+			$login = $this->login();
+			if (!$this->checkValidLogin($login)) return $login;
+	
+			$url = "/layouts/" . rawurlencode($layout) . '/script/' . rawurlencode($scriptName);
+			$parameters['script.param'] = $scriptParameter;
 			$result = $this->callCURL ($url, 'GET', $parameters);
-			$this->updateDebug ('executeScript ' . $scriptName . ' pass 2', $result);
+	
+			$this->updateDebug ('executeScript ' . $scriptName . ' pass 1', $result);
+	
+			$result = $this->checkValidResult($result);
+			if (!$result) {			
+				$result = $this->callCURL ($url, 'GET', $parameters);
+				$this->updateDebug ('executeScript ' . $scriptName . ' pass 2', $result);
+			}
+			return $result; //error, foundcount, json and array		
 		}
-		return $result; //error, foundcount, json and array
+		if ($this->fmversion == 17) {
+			if (empty ($layout)) $layout = $this->layout;
+			if (empty($id)) return $this->throwRestError (-1, "This function call without id is not supported in FileMaker 17");
+			$login = $this->login();
+			if (!$this->checkValidLogin($login)) return $login;
+	
+			$url = "/layouts/" . rawurlencode($layout) . '/records/' . rawurlencode($id);
+			$parameters['script'] = $scriptName;
+			$parameters['script.param'] = $scriptParameter;
+			$result = $this->callCURL ($url, 'GET', $parameters);
+	
+			$this->updateDebug ('executeScript ' . $scriptName . ' pass 1', $result);
+	
+			$result = $this->checkValidResult($result);
+			if (!$result) {			
+				$result = $this->callCURL ($url, 'GET', $parameters);
+				$this->updateDebug ('executeScript ' . $scriptName . ' pass 2', $result);
+			}
+			return $result; //error, foundcount, json and array	
+		}
 	}	
 	
 	function getRecords ($parameters=array(), $layout=NULL) {

@@ -20,6 +20,7 @@ Simplifies PHP connections to FileMaker 16's REST-based Data API.
 - Requires secure (https) connection
 
 - TODO: oAuth login
+- TODO: Get product version automatically using productInfo.
 - TODO: easier methods to set data and finds (eg. $fm -> addRequest()) or utility functions ($fm->buildQuery())
 - TODO: check environment: ssl/https, first call on page, fmversion, other from our web page?
 
@@ -45,6 +46,13 @@ CHANGED: show_debug is now a class property instead of a global variable - can s
 CHANGED: logout function can specify token id for manual operation/non-secure environments
 DOC: port can be appended to $host
 CHANGE: fail after initial login attempt for each function
+2021-07-08 FMS19 updates
+ADDED: ValidateSession() function introduced in FMS19
+ADDED: PHP Sessions as default storage instead of cookie
+ADDED: Exception for localhost and 127.0.0.1 when securing cURL
+CHANGED: cURL - specify use of older http version 1 instead of v2TLS (error introduced in FMS19.3 Windows)
+CHANGED: When secure is false, save cookie regardless of https & allow access from javascript
+
 
 
 ********************************************/
@@ -55,27 +63,30 @@ class fmREST {
     public $user = '';
     public $pass = '';
 	
+    public $fmversion = 19; 
     public $version = 'vLatest'; 
-    public $fmversion = 18; 
     public $layout = '';    
 
 	public $secure = true;
+	public $token_storage = 'session'; //"session" or "cookie"
 	public $token_name = 'fmtoken';
 	public $show_debug = false;
 	
 	public $debug_array = array();
 	
 	function productInfo () {
-		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
-		$url = "https://" . $this->host . "/fmi/data/".$this->version."/productInfo";
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker " . $this->fmversion);
+		$url = $this->host . "/fmi/data/".$this->version."/productInfo";
+		if ( substr ($url, 0, 4) != 'http') $url = "https://" . $url;
 		$result = $this->callCURL ($url, 'GET');
 		$this->updateDebug ('productInfo result', $result);
 		return $result;			
 	}
 
 	function databaseNames () { //doesn't work when you're logged in (because both basic & bearer headers are sent)
-		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
-		$url = "https://" . $this->host . "/fmi/data/".$this->version."/databases";
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker " . $this->fmversion);
+		$url =  $this->host . "/fmi/data/".$this->version."/databases";
+		if ( substr ($url, 0, 4) != 'http') $url = "https://" . $url;
 		$header = "Authorization: Basic " . base64_encode ($this->user . ":" . $this->pass);
 		$result = $this->callCURL ($url, 'GET', array(), array ($header));
 		$this->updateDebug ('databaseNames result', $result);
@@ -83,7 +94,7 @@ class fmREST {
 	}
 	
 	function layoutNames () {
-		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker " . $this->fmversion);
 		$login = $this->login();
 		if (!$this->checkValidLogin($login)) return $login;
 
@@ -101,7 +112,7 @@ class fmREST {
 	}
 	
 	function scriptNames () {
-		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker " . $this->fmversion);
 		$login = $this->login();
 		if (!$this->checkValidLogin($login)) return $login;
 
@@ -118,7 +129,7 @@ class fmREST {
 	}
 	
 	function layoutMetadata ( $layout = NULL ) {
-		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker " . $this->fmversion);
  		if (empty ($layout)) $layout = $this->layout;
 	
 		$login = $this->login();
@@ -137,7 +148,7 @@ class fmREST {
 	}
 	
 	function oldLayoutMetadata ( $layout = NULL ) {
-		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker " . $this->fmversion);
  		if (empty ($layout)) $layout = $this->layout;
 	
 		$login = $this->login();
@@ -232,7 +243,7 @@ class fmREST {
 	}	
 
 	function executeScript ( $scriptName, $scriptParameter, $layout=NULL ) {
-		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker 17");
+		if ($this->fmversion < 18) return $this->throwRestError (-1, "This function is not supported in FileMaker " . $this->fmversion);
 		if (empty ($layout)) $layout = $this->layout;
 		$login = $this->login();
 		if (!$this->checkValidLogin($login)) return $login;
@@ -329,10 +340,10 @@ class fmREST {
 	
 	
 	function login () {		
-		$this->updateDebug ('login start cookie',$_COOKIE);
-		if (!empty ($_COOKIE[$this->token_name])) {
-			$this->updateDebug ('login existing token', $_COOKIE[$this->token_name]);
-			return (array('response'=> array ('token'=>$_COOKIE[$this->token_name]),'messages' => [array('code'=>0,'message'=>'Already have a token.')])); 
+		$this->updateDebug ('login start token ',$this->tokenGet());
+		if (!empty ($this->tokenGet())) {
+			$this->updateDebug ('login existing token', $this->tokenGet());
+			return (array('response'=> array ('token'=>($this->tokenGet())),'messages' => [array('code'=>0,'message'=>'Already have a token.')])); 
 		}
 
 		$url =  "/sessions" ;
@@ -342,17 +353,16 @@ class fmREST {
 
 		if (isset ($result['response']['token'])) {
 			$token = $result['response']['token'];
-			setcookie($this->token_name, $token, time()+(14*60), '','',true,true);  
-			$_COOKIE[$this->token_name] = $token;
+			$this->tokenStore ($token);
 		}
 
-		$this->updateDebug ('login end cookie',$_COOKIE);								
+		$this->updateDebug ('login end token',$this->tokenGet());								
 		return $result;
 
 	}	
 	
 	function logout ( $token = NULL ) {
-		if (empty ($token)) $token = $_COOKIE[$this->token_name];
+		if (empty ($token)) $token = $this->tokenGet();
 		
 		if (empty ($token)) {
 			$this->updateDebug ('logout no token');
@@ -364,16 +374,34 @@ class fmREST {
 
 		$this->updateDebug ('logout result', $result);
 
-		if ($token == $_COOKIE[$this->token_name]) {
-			setcookie($this->token_name, '');  
-			$_COOKIE [$this->token_name]=''; 
+		if ($token == $this->tokenGet()) {
+			$this->tokenStore('');
 		}
+		return $result; 
+	}
+	
+	function validateSession ( $token = NULL ) {
+		if ($this->fmversion < 19) return $this->throwRestError (-1, "This function is not supported in FileMaker " . $this->fmversion);
+		if (empty ($token)) $token = $this->tokenGet();
+		
+		if (empty ($token)) {
+			$this->updateDebug ('validateSession no token');
+			return ($this->throwRestError(0,'No Token'));
+		}
+	
+		$url = $this->host . "/fmi/data/".$this->version."/validateSession";
+		if ( substr ($url, 0, 4) != 'http') $url = "https://" . $url;
+		$result = $this->callCURL ($url, 'GET');
+
+		$this->updateDebug ('validateSession result', $result);
+
 		return $result; 
 	}
 	
 
 	function callCURL ($url, $method, $payload='', $header=array()) {
-		if ( substr ($url, 0, 4) != 'http') $url = "https://" . $this->host . "/fmi/data/".$this->version."/databases/" . rawurlencode($this->db) . $url;
+		if (strpos ($url, "/fmi/data/") == 0  ) $url = $this->host . "/fmi/data/".$this->version."/databases/" . rawurlencode($this->db) . $url;
+		if ( substr ($url, 0, 4) != 'http') $url = "https://" . $url;
 
 		$this->updateDebug ("pre-payload: ", $payload);
 				 
@@ -384,7 +412,7 @@ class fmREST {
 		
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);         //follow redirects
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);         //return the transfer as a string 
-		if ($this -> secure)  {
+		if ($this->secure && $this->host != 'localhost' && $this->host != '127.0.0.1' )  {
 			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);         //verify SSL CERT 
 			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);         //verify SSL CERT 
 		} else {
@@ -393,10 +421,11 @@ class fmREST {
 		}		
 		curl_setopt($ch, CURLOPT_VERBOSE, 1);
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1); //Don'T use cache
+		curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 
-        if (!empty ($_COOKIE[$this->token_name]) && empty (preg_grep('/^Authorization/i', $header))) {
-        	$this->updateDebug ('not empty token on call', $_COOKIE[$this->token_name]);
-			$header = array_merge ($header, array ('Authorization:Bearer '. $_COOKIE[$this->token_name] , 'Content-Type: '.$contentType));
+        if (!empty ($this->tokenGet()) && empty (preg_grep('/^Authorization/i', $header))) {
+        	$this->updateDebug ('not empty token on call', $this->tokenGet());
+			$header = array_merge ($header, array ('Authorization:Bearer '. $this->tokenGet() , 'Content-Type: '.$contentType));
 			curl_setopt ($ch, CURLOPT_HTTPHEADER, $header );
         } else {
 			$header = array_merge ($header, array ('Content-Type: '.$contentType));
@@ -451,7 +480,7 @@ class fmREST {
 
 	function checkValidResult($result){
 		if ( isset($result['messages'][0]['code']) &&  $result['messages'][0]['code'] != 0 ) { 
-			$_COOKIE [$this->token_name]=''; 
+			$this->tokenStore(''); 
 			$login = $this->login();
 			if ( $login['messages'][0]['code'] != 0) {
 				$this->updateDebug ('checkValidResult', '2nd login failed');
@@ -473,6 +502,25 @@ class fmREST {
 	 	return true;
 	}
 		
+	function tokenStore ($token){
+		if ($this->token_storage == "session") {
+			if (session_id() == "") session_start();
+			$_SESSION[$this->token_name] = $token;
+		} else {
+			if ($this->secure) setcookie($this->token_name, $token, time()+(14*60), '','',true,true);  
+			else setcookie($this->token_name, $token, time()+(14*60));  
+			$_COOKIE[$this->token_name] = $token;
+		}	
+	}
+	
+	function tokenGet () {
+		if ($this->token_storage == "session") {
+			if (session_id() == "") session_start();
+			return $_SESSION[$this->token_name];
+		}
+		else return $_COOKIE[$this->token_name];
+	}
+	
     function __construct($host='',$db='',$user='',$pass='', $layout='') {
         if (!empty ($host))$this->host = $host;
         if (!empty ($db)) $this->db = $db;

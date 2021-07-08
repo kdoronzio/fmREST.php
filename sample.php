@@ -8,7 +8,7 @@ $result = array();
 
 include_once ('fmREST.php');
 
-$host = 'myhost.domain.com';
+$host = 'localhost';
 $db = 'fmREST-sample';
 $user = 'fmrest';
 $pass = 'paradise';
@@ -17,10 +17,7 @@ $layout = 'sample';
 $fm = new fmREST ($host, $db, $user, $pass, $layout);
 $fm -> show_debug = false; //turn this to true or "html" to show automatically. We're manually including debug information with <print_r ($fm->debug_array);>
 $fm -> secure = true; //not required - defaults to true
-
-/* uncomment the following two lines when working with FileMaker 17 Server */
-// $fm -> version = "v1";
-// $fm -> fmversion = 17;
+$fm -> fmversion = 19; 
 
 
 if ($_REQUEST['action'] == 'createrecord') {
@@ -137,6 +134,11 @@ elseif ($_REQUEST['action'] == 'logout') {
 	$result = $fm -> logout (); 
 }
 
+elseif ($_REQUEST['action'] == 'validatesession') {
+	//logout
+	$result = $fm -> validateSession (); 
+}
+
 ?>
 
 <html>
@@ -151,7 +153,7 @@ elseif ($_REQUEST['action'] == 'logout') {
 <body>
 <div>
 	<div style="margin: 50px;margin-top:10px;width:350px;">
-		fmREST.php - <a href="https://sosimplesoftware.com/fmrest">soSIMPLEsoftware.com</a> 
+		fmREST.php - <a href="https://sosimplesoftware.com/fmrest.php">soSIMPLEsoftware.com</a> 
 		<form method='post' enctype="multipart/form-data">
 		
 			<div class="border rounded p-3">
@@ -173,7 +175,7 @@ elseif ($_REQUEST['action'] == 'logout') {
     <div class="card-header" id="headingOne">
       <h2 class="mb-0">
         <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-         Get Metadata (FM18 only)
+         Get Metadata (FM18+ only)
         </button>
       </h2>
     </div>
@@ -219,13 +221,14 @@ elseif ($_REQUEST['action'] == 'logout') {
     </div>
     <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionExample">
       <div class="card-body">
-			  <input type="radio" name="action" value="executescript" > Execute Script <small> Script Name and Script Parameter (FM18 only) </small><br><br>
+			  <input type="radio" name="action" value="executescript" > Execute Script <small> Script Name and Script Parameter (FM18+ only) </small><br><br>
 
 			  <input type="radio" name="action" value="uploadcontainer" > Upload Container <small>(uses Record ID & File)</small><br><br>
 
 			  <input type="radio" name="action" value="setglobalfields" > Set Global Fields <small>(uses Global)</small><br><br>
 			  <input type="radio" name="action" value="login" > Log In Manually <small>(happens automatically with all above actions)</small><br>
 			  <input type="radio" name="action" value="logout" > Log Out Manually <small>(will automatically log out in 15 minutes)</small><br>
+			  <input type="radio" name="action" value="validatesession" > Validate Session <small>(FMS19+ only)</small><br>
       </div>
     </div>
   </div>

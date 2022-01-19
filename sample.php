@@ -52,18 +52,19 @@ elseif ($_REQUEST['action'] == 'editrecord') {
 elseif ($_REQUEST['action'] == 'getrecord') {
 	//get record
 	$recordId = $_REQUEST['recordid'];
-	//	$data['script'] = $_REQUEST['Script'];
-	//	$data['script.param'] = $_REQUEST['Parameter'];
+	//	$parameters['script'] = $_REQUEST['Script'];
+	//	$parameters['script.param'] = $_REQUEST['Parameter'];
 	$result = $fm -> getRecord ($recordId, $parameters); 
 }
 
 elseif ($_REQUEST['action'] == 'getrecords') {
 	//get records
 	//	$parameters['_limit'] = 1;
-	//	$data['script'] = $_REQUEST['Script'];
-	//	$data['script.param'] = $_REQUEST['Parameter'];
+	//	$parameters['script'] = $_REQUEST['Script'];
+	//	$parameters['script.param'] = $_REQUEST['Parameter'];
+	$sort[] = [ "fieldName" => "Text1", "sortOrder" => "ascend"];
+	$parameters['_sort'] = json_encode($sort);
 	$result = $fm -> getRecords ($parameters, "sample"); 
-
 }
 
 elseif ($_REQUEST['action'] == 'uploadcontainer') {
@@ -82,6 +83,8 @@ elseif ($_REQUEST['action'] == 'findrecords') {
 	//	$data['limit'] = 2;
 	//	$data['script'] = $_REQUEST['Script'];
 	//	$data['script.param'] = $_REQUEST['Parameter'];
+	$sort[] = [ "fieldName" => "Text1", "sortOrder" => "ascend"];
+	$data['sort'] = $sort;
 	$result = $fm -> findRecords ($data); 
 }
 
